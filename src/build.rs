@@ -34,7 +34,7 @@ pub struct Definition {
 pub struct Metadata {
     /// The name of any definitions this one depends on, if any.
     #[serde(default)]
-    pub depends_on    : Vec<String>,
+    pub depends_on : Vec<String>
 }
 
 impl Definition {
