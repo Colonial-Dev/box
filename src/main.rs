@@ -1,6 +1,7 @@
 mod build;
 mod cli;
 mod podman;
+mod user;
 
 mod prelude {
     pub use color_eyre::eyre::{
@@ -538,24 +539,19 @@ fn evaluate_preset(ctr: &str, args: &[String]) -> Result<()> {
 
     match name.as_str() {
         "cp-user" => {
-            use uzers::os::unix::UserExt;
-
             let name = match args.get(1) {
                 Some(name) => OsString::from(name),
-                None => uzers::get_current_username()
+                None => user::current_username()
                     .expect("Current user should exist")
             };
 
-            let user = uzers::get_user_by_name(&name)
+            let (name, uid, gid, shl) = user::by_name(&name)
                 .expect("Current user should exist");
             
             // If your username isn't Unicode... honestly,
             // I'll be impressed enough to correct this to do proper OsString fiddling.
             let name = name.to_string_lossy();
-
-            let uid = user.uid();
-            let gid = user.primary_group_id();
-            let shl = user.shell().to_string_lossy();
+            let shl  = shl.to_string_lossy();
 
             let scriptlet = format!(
                 "
