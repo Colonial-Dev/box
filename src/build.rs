@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::hash::{DefaultHasher, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -17,7 +18,7 @@ pub struct Definition {
     pub path: PathBuf,
     /// The first line of the definition.
     pub bang: String,
-    /// The [`seahash`] of the definition.
+    /// The hash of the definition.
     pub hash: u64,
     /// The combined hash of the definition and all of its dependencies.
     /// 
@@ -192,15 +193,17 @@ impl Definition {
             .suggestion("Did you make a typo?")?;
 
         
-        let hash = seahash::hash(
+        let mut hasher = DefaultHasher::new();
+        
+        hasher.write(
             data.as_bytes()
         );
 
-        let tree = hash;
+        let hash = hasher.finish();
         
         debug!("Fetched definition from path {path:?}");
 
-        Ok(Self { path, bang, hash, tree, meta })
+        Ok(Self { path, bang, hash, tree: hash, meta })
     }
 
     /// Get the name of the definition (file name minus extension.)
@@ -418,12 +421,12 @@ impl Definition {
                 .context("Fault when writing new definition to file")?
         }
         else {
-            warn!("Definition creation aborted!");
+            warn!("Definition creation aborted.");
 
             std::fs::remove_file(&path)
                 .context("Fault when removing unwanted definition file")?;
 
-            bail!("Definition creation aborted")
+            eprintln!("Creation of definition {name} aborted.")
         }
         
         Ok(())
@@ -463,8 +466,8 @@ impl Definition {
                 .context("Fault when writing definition to file")?
         }
         else {
-            warn!("Definition edit aborted!");
-            bail!("Definition edit aborted")
+            warn!("Definition edit aborted.");
+            eprintln!("No changes detected.")
         }
 
         Ok(())
