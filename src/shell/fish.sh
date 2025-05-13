@@ -30,6 +30,10 @@ function buildah
             -a box.name=$__BOX_BUILD_NAME \
             $ctr
 
+        buildah config -a \
+            box.instantiate=$__BOX_BUILD_INSTANTIATE \
+            $ctr
+
         set -gx __BOX_BUILD_CTR $ctr
     else
         command buildah $argv

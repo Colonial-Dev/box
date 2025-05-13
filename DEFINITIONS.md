@@ -9,8 +9,10 @@ All definitions can contain metadata as TOML key-value pairs with a special pref
 
 Metadata can be placed anywhere in the file. When Box evaluates a definition, each line of metadata is extracted and concatenated into a single TOML document; any intervening lines are ignored.
 
-Currently, only one key is recognized:
+Currently, the following keys are recognized:
 - `depends_on` (`[string]`) - a list of definition names that this definition depends on. Defaults to empty.
+- `instantiate` (`bool`, default `true`) - whether or not this definition should be directly instantiable as a container.
+  - Good for "base" images that are used as a foundation for multiple specialized containers rather than being utilized directly.
 
 ## Build Laziness
 

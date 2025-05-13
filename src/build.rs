@@ -34,8 +34,13 @@ pub struct Definition {
 pub struct Metadata {
     /// The name of any definitions this one depends on, if any.
     #[serde(default)]
-    pub depends_on : Vec<String>
+    pub depends_on: Vec<String>,
+    /// Whether or not to allow instantiating a container from this definition.
+    #[serde(default = "yes")]
+    pub instantiate: bool,
 }
+
+fn yes() -> bool { true }
 
 impl Definition {
     /// Enumerate all definitions.
@@ -263,11 +268,8 @@ impl Definition {
             )
         }
 
-        if self.bang.contains("fish") {
-            Command::new("fish")
-                .arg("-C")
-                .arg("bx init fish | source")
-                .arg(&self.path)
+        let extend_env = |mut cmd: Command| {
+            cmd
                 .env(
                     "__BOX_BUILD_PATH",
                     &self.path
@@ -292,6 +294,23 @@ impl Definition {
                     "__BOX_BUILD_NAME",
                     self.name()
                 )
+                .env(
+                    "__BOX_BUILD_INSTANTIATE",
+                    self.meta.instantiate.to_string()
+                );
+
+            cmd
+        };
+
+        if self.bang.contains("fish") {
+            let mut cmd = Command::new("fish");
+
+            cmd
+                .arg("-C")
+                .arg("bx init fish | source")
+                .arg(&self.path);
+
+            extend_env(cmd)
                 .spawn_ok()
                 .context("Fault when evaluating Fish-based definition")?;
         }
@@ -314,33 +333,13 @@ impl Definition {
                 return Err(err)
             };
 
-            Command::new(shell)
+            let mut cmd = Command::new(shell);
+
+            cmd
                 .arg("-c")
-                .arg(script)
-                .env(
-                    "__BOX_BUILD_PATH",
-                    &self.path
-                )
-                .env(
-                    "__BOX_BUILD_DIR",
-                    {
-                        let mut p = self.path.to_owned();
-                        p.pop();
-                        p
-                    }
-                )
-                .env(
-                    "__BOX_BUILD_HASH",
-                    format!("{:x}", self.hash)
-                )
-                .env(
-                    "__BOX_BUILD_TREE",
-                    format!("{:x}", self.tree)
-                )
-                .env(
-                    "__BOX_BUILD_NAME",
-                    self.name()
-                )
+                .arg(script);
+
+            extend_env(cmd)
                 .spawn_ok()
                 .context("Fault when evaluating POSIX-based definition")?;
         }

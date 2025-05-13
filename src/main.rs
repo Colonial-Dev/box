@@ -122,6 +122,10 @@ fn main() -> Result<()> {
         );
         
         for image in set {
+            if let Some("false") = image.annotation("box.instantiate") {
+                continue;
+            }
+
             bar.set_message(
                 image
                     .annotation("box.name")
@@ -173,6 +177,10 @@ fn main() -> Result<()> {
         },
         Ephemeral { name, path, mut args } => {
             let image = Image::from_id(&name)?;
+
+            if let Some("false") = image.annotation("box.instantiate") {
+                bail!("Image {name} is defined as non-instantiable.")
+            }
 
             args.insert(0, path);
 
