@@ -1,5 +1,6 @@
 mod build;
 mod cli;
+mod fuzzy;
 mod podman;
 mod user;
 
@@ -29,6 +30,7 @@ mod prelude {
 use prelude::*;
 use build::*;
 use cli::*;
+use fuzzy::*;
 use podman::*;
 
 #[cfg(not(target_os = "linux"))]
@@ -259,9 +261,6 @@ fn install_logging() {
 
 /// Checks if a container exists, returning a well-formed error (with fuzzy-matched suggestions) if not.
 fn existence_check(id: &str) -> Result<()> {
-    use nucleo_matcher::{Matcher, Config};
-    use nucleo_matcher::pattern::*;
-
     if Container::exists(id)? {
         Ok(())
     }
@@ -271,19 +270,16 @@ fn existence_check(id: &str) -> Result<()> {
 
         let names = containers
             .iter()
-            .filter_map(|c| c.annotation("box.name") );
+            .filter_map(|c|
+                c.annotation("box.name") 
+            );
 
-        let mut matcher = Matcher::new(Config::DEFAULT);
+        let mut fuzzy = Fuzzy::new();
 
-        let matches = Pattern::new(
-            id,
-            CaseMatching::Ignore,
-            Normalization::Smart,
-            AtomKind::Fuzzy
-        ).match_list(names, &mut matcher);
+        for s in names { fuzzy.add(s); }
 
-        let suggestion = match matches.first() {
-            Some(m) => format!("Did you mean '{}'?", m.0),
+        let suggestion = match fuzzy.find(id).first() {
+            Some(m) => format!("Did you mean '{}'?", m.1),
             None => "Did you make a typo?".to_string(),
         };
 

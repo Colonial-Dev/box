@@ -6,6 +6,7 @@ use std::process::Command;
 use serde::Deserialize;
 
 use crate::prelude::*;
+use crate::fuzzy::*;
 use crate::podman::*;
 use crate::CommandExt;
 
@@ -354,9 +355,6 @@ impl Definition {
     pub fn alternative(name: &str) -> Option<String> {
         use std::ffi::OsStr;
 
-        use nucleo_matcher::{Matcher, Config};
-        use nucleo_matcher::pattern::*;
-
         let defs = match Self::enumerate() {
             Ok(defs) => defs,
             Err(err) => {
@@ -375,19 +373,16 @@ impl Definition {
             })
             .collect();
 
-        let mut matcher = Matcher::new(Config::DEFAULT);
+        let mut fuzzy = Fuzzy::new();
 
-        Pattern::new(
-            name,
-            CaseMatching::Ignore,
-            Normalization::Smart,
-            AtomKind::Fuzzy
-        )
-        .match_list(names, &mut matcher)
-        .first()
-        .map(|(m, _)| m)
-        .copied()
-        .map(str::to_owned)
+        for s in names { fuzzy.add(s); }
+
+        fuzzy
+            .find(name)
+            .first()
+            .map(|(_, s)|
+                s.to_string()
+            )
     }
 }
 

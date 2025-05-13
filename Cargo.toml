@@ -15,7 +15,6 @@ lto           = true
 [dependencies]
 # Command line.
 clap = { version = "4.5.23", features = ["derive"] }
-nucleo-matcher = "0.3.1"
 dialoguer = "0.11.0"
 indicatif = "0.17.9"
 comfy-table = "7.1.3"
